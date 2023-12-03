@@ -13,7 +13,7 @@ import { Provider } from 'react-redux'
 
 const routes = createBrowserRouter([
   {
-    path: '/',
+    path: '/bank-game',
     element: <App />
   },
   {

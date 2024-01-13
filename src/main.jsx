@@ -32,9 +32,7 @@ const routes = createBrowserRouter([
     path: '/game-over',
     element: <GameOver />
   }
-], {
-  basename: '/bank-game'
-})
+])
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

@@ -1,5 +1,5 @@
 import { configureStore } from '@reduxjs/toolkit'
-import playerReducer from './ducks/playerSlice.js'
+import playerReducer from './playerSlice.js'
 
 export default configureStore({
   reducer: {

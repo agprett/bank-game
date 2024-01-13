@@ -22,6 +22,13 @@ const playerSlice = createSlice({
 
       state.value[index].bank += +amount
     },
+    subtractBankAmount: (state, action) => {
+      const {name, amount} = action.payload
+  
+      const index = state.value.findIndex(player => player.name === name)
+  
+      state.value[index].bank -= +amount
+    },
     clearBanks: (state) => {
       state.value = state.value.map(player => {
         return {
@@ -33,6 +40,6 @@ const playerSlice = createSlice({
   }
 })
 
-export const {addPlayer, removePlayer, clearPlayers, updateBankAmount, clearBanks} = playerSlice.actions
+export const {addPlayer, removePlayer, clearPlayers, updateBankAmount, subtractBankAmount, clearBanks} = playerSlice.actions
 
 export default playerSlice.reducer

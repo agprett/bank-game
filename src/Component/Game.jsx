@@ -1,14 +1,19 @@
 import { useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router";
-import { updateBankAmount } from "../ducks/playerSlice";
+import { updateBankAmount, subtractBankAmount } from "../ducks/playerSlice";
 import { Container, Row, Button, Col, Table } from "react-bootstrap";
+
+import {Move, Turn} from '../fn/stack.js'
+
+const turns = new Turn()
 
 function Game() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
   const players = useSelector((state) => state.players.value);
+
 
   const [round, setRound] = useState(1);
   const [numRolls, setNumRolls] = useState(0);
@@ -36,16 +41,63 @@ function Game() {
     setNames(nameCollector);
     setActive(nameCollector);
   }, []);
+  
+  const addMove = (data) => {
+    const next = new Move(data)
+
+    turns.add(next)
+  }
+
+  const undoMove = () => {
+    let response = turns.undo()
+    if(response) {
+      const {data} = response
+      setBanking([])
+      if(data.add) {
+        setBankAmount(bankAmount - data.add)
+        setNumRolls(numRolls - 1)
+
+        let rolled = [...active];
+        rolled.unshift(rolled.pop());
+        setActive(rolled);
+        setLastRolled(active[-1]);
+      } else if(data.reset) {
+        setRound(round - 1)
+        setNumRolls(data.moves)
+        setBankAmount(data.amount)
+        setLastRolled(data.last)
+        setActive(data.active)
+        setBanked(data.banked)
+
+        if(data.players) {
+          data.players.forEach((name) => {
+            dispatch(subtractBankAmount({ name, amount: data.amount }));
+          });
+        }
+      } else {
+        setActive(data.active)
+        setBanked(data.banked)
+
+        data.players.forEach((name) => {
+          dispatch(subtractBankAmount({ name, amount: data.amount }));
+        });
+      }
+    } else {
+      alert('No moves to undo')
+    }
+  }
 
   const updateBank = (value) => {
     if (numRolls < 3) {
       if (+value === 7) {
         setBankAmount(bankAmount + 70);
+        addMove({add: 70})
       } else if (value === "DOUBLES!") {
         alert("No doubles during first three rounds");
         return;
       } else {
         setBankAmount(bankAmount + +value);
+        addMove({add: +value})
       }
     } else {
       if (+value === 2 || +value === 12) {
@@ -56,6 +108,8 @@ function Game() {
           alert("Game Over!");
           navigate("/game-over");
         } else {
+          addMove({reset: true, amount: bankAmount, moves: numRolls, banked, active, last: lastRolled})
+
           setBankAmount(0);
           setNumRolls(0);
           setRound(round + 1);
@@ -74,8 +128,10 @@ function Game() {
         }
       } else if (value === "DOUBLES!") {
         setBankAmount(bankAmount * 2);
+        addMove({add: bankAmount})
       } else {
         setBankAmount(bankAmount + +value);
+        addMove({add: +value})
       }
     }
     setNumRolls(numRolls + 1);
@@ -105,8 +161,6 @@ function Game() {
 
   const saveBanking = () => {
     banking.forEach((name) => {
-      console.log(name);
-
       setActive((state) => {
         const activeIndex = state.findIndex((e) => e === name);
         const updatedActive = [...state];
@@ -116,34 +170,42 @@ function Game() {
       });
 
       dispatch(updateBankAmount({ name, amount: bankAmount }));
-
+      
       const updatedBanked = [...banked];
       updatedBanked.push(name);
       setBanked(updatedBanked);
     });
-
+    
     if (active.length - banking.length === 0) {
       if (round === 10) {
         alert("Game Over!");
         navigate("/game-over");
       } else {
+        let move = {reset: true, players: banking, amount: bankAmount, moves: numRolls, banked: banked, active: active, last: lastRolled}
+        addMove(move)
+        turns.print()
+        
         setBankAmount(0);
         setNumRolls(0);
         setRound(round + 1);
         setViewBank(false);
         setBanked([]);
         setBanking([]);
-
+        
         let reorderedActive = [...names];
-
+        
         while (reorderedActive[reorderedActive.length - 1] !== lastRolled) {
           reorderedActive.push(reorderedActive.shift());
         }
         setActive(reorderedActive);
-
+        
         return;
       }
     }
+    
+    let move = {amount: bankAmount, players: banking, active, banked}
+    addMove(move)
+    turns.print()
 
     setBanking([]);
   };
@@ -325,6 +387,8 @@ function Game() {
     <Container className="custom-page" id="game-page">
       <h2>Round: {round}/10</h2>
       <h2 id="bank-total">Current Total: {bankAmount}</h2>
+
+      <button onClick={undoMove}>Undo</button>
 
       <h2>Scores</h2>
 

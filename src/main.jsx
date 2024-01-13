@@ -21,15 +21,15 @@ const routes = createBrowserRouter([
     element: <App />
   },
   {
-    path: 'players',
+    path: '/players',
     element: <Players />
   },
   {
-    path: 'game',
+    path: '/game',
     element: <Game />
   },
   {
-    path: 'game-over',
+    path: '/game-over',
     element: <GameOver />
   }
 ], {
